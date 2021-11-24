@@ -1,0 +1,85 @@
+{
+    "eid": {
+    "name": "id"
+  },
+  "31-0.0": {
+    "name": "sex",
+    "values": {
+      "0": "female",
+      "1": "male"
+    }
+  },
+  "21000-0.0": {
+    "name": "ethnic_background",
+    "values": {
+      "1001": "white_british",
+      "1002": "irish",
+      "1003": "any_other_white",
+      "2001": "white_and_black_carribean",
+      "2002": "white_and_black_african",
+      "2003": "white_and_asian",
+      "2004": "white_and_any_other_background",
+      "3001": "indian",
+      "3002": "pakistani",
+      "3003": "bangladeshi",
+      "3004": "any_other_asian_background",
+      "4001": "black_carribean",
+      "4002": "black_african",
+      "4003": "any_other_black_background"
+    }
+  },
+  "21022-0.0": {
+    "name": "age_at_recruitment",
+    "values": null
+  },
+  "2724-0.0": {
+    "name": "had_menopause",
+    "values": {
+      "0": "no",
+      "1": "yes",
+      "2": "not_sure_vasectomy",
+      "3": "not_sure_other_reason",
+      "-1": "prefer_not_to_answer"
+    }
+  },
+  "21001-0.0": {
+    "name": "bmi",
+    "values": null
+  },
+  "3700-0.0": {
+    "name": "time_since_last_menstual_period",
+    "values": null
+  },
+  "20161-0.0": {
+    "name": "pack_years_of_smoking",
+    "values": null
+  },
+  "1239-0.0": {
+    "name": "current_tobacco_smoking",
+    "values": {
+      "0": "no",
+      "1": "yes_most_or_all_days",
+      "2": "ocassionally",
+      "-3": "prefer_not_to_answer"
+    }
+  },
+  "100580-0.0": {
+    "name": "alcoholic_beverages_yesterday",
+    "values": {
+      "0": "no",
+      "1": "yes"
+    }
+  },
+  "1558-0.0": {
+    "name": "alcohol_intake_frequency",
+    "values": {
+      "1": "daily_or_almost_daily",
+      "2": "thre_or_four_times_a_week",
+      "3": "once_or_twice_per_week",
+      "4": "one_to_three_times_a_month",
+      "5": "special_occasions_only",
+      "6": "never",
+      "-3": "prefer_not_to_answer"
+    }
+  }
+}
