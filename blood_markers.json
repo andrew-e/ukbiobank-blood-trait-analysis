@@ -1,0 +1,47 @@
+{
+  "30070-0.0": {
+    "name": "red_blood_cell_distribution_width"
+  },
+  "30010-0.0": {
+    "name": "red_blood_cell_count"
+  },
+  "30020-0.0": {
+    "name": "haemoglobin_concentration"
+  },
+  "30030-0.0": {
+    "name": "haematocrit_percentage"
+  },
+  "30040-0.0": {
+    "name": "mean_corpuscular_volume"
+  },
+  "30050-0.0": {
+    "name": "mean_corpuscular_haemoglobin"
+  },
+  "30060-0.0": {
+    "name": "mean_corpuscular_haemoglobin_concentration"
+  },
+  "30100-0.0": {
+    "name": "mean_platelet_volume"
+  },
+  "30080-0.0": {
+    "name": "platelet_count"
+  },
+  "30160-0.0": {
+    "name": "basophil_count"
+  },
+  "30140-0.0": {
+    "name": "neutrophil_count"
+  },
+  "30130-0.0": {
+    "name": "monocyte_count"
+  },
+  "30150-0.0": {
+    "name": "eosinophill_count"
+  },
+  "30000-0.0": {
+    "name": "white_blood_cell_count"
+  },
+  "30120-0.0": {
+    "name": "lymphocyte_count"
+  }
+}

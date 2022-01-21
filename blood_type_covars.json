@@ -1,5 +1,5 @@
 {
-    "eid": {
+  "eid": {
     "name": "id"
   },
   "31-0.0": {
@@ -12,25 +12,31 @@
   "21000-0.0": {
     "name": "ethnic_background",
     "values": {
-      "1001": "white_british",
-      "1002": "irish",
-      "1003": "any_other_white",
-      "2001": "white_and_black_carribean",
-      "2002": "white_and_black_african",
-      "2003": "white_and_asian",
-      "2004": "white_and_any_other_background",
-      "3001": "indian",
-      "3002": "pakistani",
-      "3003": "bangladeshi",
-      "3004": "any_other_asian_background",
-      "4001": "black_carribean",
-      "4002": "black_african",
-      "4003": "any_other_black_background"
+      "1": "white",
+      "1001": "white", //"british",
+      "1002": "white", //"irish"
+      "1003": "white", //"white_other",
+      "2": "mixed",
+      "2001": "mixed", //"white_and_black_carribean",
+      "2002": "mixed", //"white_and_black_african",
+      "2003": "mixed", //"white_and_asian",
+      "2004": "mixed", //"white_and_any_other_background",
+      "3": "asian",
+      "3001": "asian", //"indian",
+      "3002": "asian", //"pakistani",
+      "3003": "asian", //"bangladeshi",
+      "3004": "asian", //"any_other_asian_background",
+      "4": "black",
+      "4001": "black", //"black_carribean",
+      "4002": "black", //"black_african",
+      "4003": "black", //"any_other_black_background",
+      "-1": "dont_know",
+      "-3": "prefer_not_to_answer"
     }
   },
   "21022-0.0": {
     "name": "age_at_recruitment",
-    "values": null
+    "scale": true
   },
   "2724-0.0": {
     "name": "had_menopause",
@@ -39,20 +45,20 @@
       "1": "yes",
       "2": "not_sure_vasectomy",
       "3": "not_sure_other_reason",
-      "-1": "prefer_not_to_answer"
+      "-3": "prefer_not_to_answer"
     }
   },
   "21001-0.0": {
     "name": "bmi",
-    "values": null
+    "scale": true
   },
   "3700-0.0": {
     "name": "time_since_last_menstual_period",
-    "values": null
+    "scale": true
   },
   "20161-0.0": {
     "name": "pack_years_of_smoking",
-    "values": null
+    "scale": true
   },
   "1239-0.0": {
     "name": "current_tobacco_smoking",
@@ -63,12 +69,9 @@
       "-3": "prefer_not_to_answer"
     }
   },
-  "100580-0.0": {
-    "name": "alcoholic_beverages_yesterday",
-    "values": {
-      "0": "no",
-      "1": "yes"
-    }
+  "100022-0.0": {
+    "name": "alcoholic_drinks_yesterday",
+    "scale": true
   },
   "1558-0.0": {
     "name": "alcohol_intake_frequency",
