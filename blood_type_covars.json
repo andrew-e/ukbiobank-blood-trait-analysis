@@ -30,6 +30,8 @@
       "4001": "black", //"black_carribean",
       "4002": "black", //"black_african",
       "4003": "black", //"any_other_black_background",
+      "5": "chinese",
+      "6": "other",
       "-1": "dont_know",
       "-3": "prefer_not_to_answer"
     }
