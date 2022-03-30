@@ -7,8 +7,11 @@ library(bnstruct)
 library(ggplot2)
 
 biobank_csv = "/rds/general/project/chadeau_ukbb_folder/live/data/project_data/UKB_69328/basket_47946_14Sep21/ukb47946.csv"
+old_biobank_csv = "/rds/general/project/chadeau_ukbb_folder/live/data/project_data/Raw_data_19266/ukb26390.csv" #maybe use this one instead?
+biobank_id_map = "/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/data/link_69328_19266_genotyped.txt"
 covars_metadata <- fromJSON("ukbiobank-blood-trait-analysis/blood_type_covars.json", flatten=TRUE)
 blood_markers_metadata <- fromJSON("ukbiobank-blood-trait-analysis/blood_markers.json", flatten=TRUE)
+results_directory <- "ukbiobank-blood-trait-analysis/results/residuals"
 
 ######
 # STEP 1: Preparing covars
@@ -20,12 +23,15 @@ for (id in names(covars_metadata)) {
 }
 
 blood_trait_covars <- fread(biobank_csv, sep=',', header=TRUE,stringsAsFactors=FALSE, select = blood_trait_covar_ids) #nrows = 100
+patient_id_map <- fread(biobank_id_map, sep=' ', header=TRUE,stringsAsFactors=FALSE)
+blood_trait_covars <- merge(blood_trait_covars, patient_id_map, by.x="id", by.y="eid_69328")
+
 
 covar_header_names = c()
 for(column in colnames(blood_trait_covars)) {
   column_values <- covars_metadata[[column]]$values
   covar_header_names <<- append(covar_header_names, covars_metadata[[column]]$name)
-  
+
   if(!is.null(column_values)) {
     #switch the ids with the names of the variables
     mapply(function(x, i) {
@@ -62,10 +68,10 @@ imputed = knn.impute(as.matrix(blood_trait_covars), k=3, cat.var=c(2,3,5,9,11), 
 
 #ex. hemoglobin: so it changes what shows up in the blood sample.  So, they are known to influence blood measurements, so we have to take account for those differences.
 #look at the Figure 5A, and grab the data to put into this table
-#then you can 
+#then you can
 
 #####
-# STEP 2: prepare blood marker data, 
+# STEP 2: prepare blood marker data,
 #####
 
 blood_marker_ids <- c()
@@ -79,14 +85,14 @@ marker_header_names = c()
 for(column in colnames(blood_markers)) {
   column_values <- blood_markers_metadata[[column]]$values
   marker_header_names <<- append(marker_header_names, blood_markers_metadata[[column]]$name)
-  
+
   if(!is.null(column_values)) {
     #switch the ids with the names of the variables
     mapply(function(x, i) {
       blood_markers[[column]][blood_markers[[column]] == i] <<- x
     }, column_values, names(column_values)
     )
-    
+
     #after swapping vars with names, turns column into a factor
     blood_markers[[column]] <- as.factor(blood_markers[[column]])
   }
@@ -100,73 +106,92 @@ colnames(blood_markers) <- marker_header_names
 ####
 
 run_gam <- function(df, name) {
-  lower_bounds <- sd(red_blood_cell_distribution_width$marker)*-6
-  upper_bounds <-  sd(red_blood_cell_distribution_width$marker)*6
+  lower_bounds <- sd(df$marker)*-6
+  upper_bounds <-  sd(df$marker)*6
   
-  df_white <- subset(red_blood_cell_distribution_width, ethnic_background == "white")
-  df_white_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") + 
+  residual_col_names <- c("id", "eid_19266", "residuals")
+
+  df_white <- subset(df, ethnic_background == "white")
+  df_white_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") +
                                                               s(bmi, by=as.factor(had_menopause), k=30, bs="tp") +
-                                                              s(time_since_last_menstual_period, k=30, bs="ps")  + 
-                                                              s(alcoholic_drinks_yesterday, k=30, bs="ps") + 
+                                                              s(time_since_last_menstual_period, k=30, bs="ps")  +
+                                                              s(alcoholic_drinks_yesterday, k=30, bs="ps") +
                                                               s(pack_years_of_smoking, k=30, bs="ps")
                                                             , optimizer=c("outer", "newton"), data=df_white)
-  white_marker <- df_white_gam$residuals
-  white_marker <- white_marker[white_marker < upper_bounds & white_marker > lower_bounds]
-  
+
+  to_save <- data.frame(df_white$id, df_white$eid_19266, df_white_gam$residuals)
+  colnames(to_save) <- residual_col_names
+  to_save <- to_save[to_save$residuals < upper_bounds & to_save$residuals > lower_bounds,]
+  write.csv(to_save, sprintf("%s/white_%s_residuals.csv", results_directory, name), row.names = FALSE)
+
+
   df_asian <- subset(df, ethnic_background == "asian")
-  df_asian_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") + 
+  df_asian_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") +
                              s(bmi, by=as.factor(had_menopause), k=30, bs="tp") +
-                             s(time_since_last_menstual_period, k=30, bs="ps")  + 
-                             s(alcoholic_drinks_yesterday, k=30, bs="ps") + 
+                             s(time_since_last_menstual_period, k=30, bs="ps")  +
+                             s(alcoholic_drinks_yesterday, k=30, bs="ps") +
                              s(pack_years_of_smoking, k=30, bs="ps")
                            , optimizer=c("outer", "newton"), data=df_asian)
-  asian_marker <- df_asian_gam$residuals
-  asian_marker <- asian_marker[asian_marker < upper_bounds & asian_marker > lower_bounds]
   
-  
+
+  to_save <- data.frame( df_asian$id, df_asian$eid_19266, df_asian_gam$residuals)
+  colnames(to_save) <- residual_col_names
+  to_save <- to_save[to_save$residuals < upper_bounds & to_save$residuals > lower_bounds,]
+  write.csv(to_save, sprintf("%s/asian_%s_residuals.csv", results_directory, name), row.names = FALSE)
+
+
   df_black <- subset(df, ethnic_background == "black")
-  df_black_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") + 
+  df_black_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") +
                              s(bmi, by=as.factor(had_menopause), k=30, bs="tp") +
-                             s(time_since_last_menstual_period, k=30, bs="ps")  + 
-                             s(alcoholic_drinks_yesterday, k=30, bs="ps") + 
+                             s(time_since_last_menstual_period, k=30, bs="ps")  +
+                             s(alcoholic_drinks_yesterday, k=30, bs="ps") +
                              s(pack_years_of_smoking, k=30, bs="ps")
                            , optimizer=c("outer", "newton"), data=df_black)
-  black_marker <- df_black_gam$residuals
-  black_marker <- black_marker[black_marker < upper_bounds & black_marker > lower_bounds]
   
-  
+  to_save <- data.frame(df_black$id, df_black$eid_19266, df_black_gam$residuals)
+  colnames(to_save) <- residual_col_names
+  to_save <- to_save[to_save$residuals < upper_bounds & to_save$residuals > lower_bounds,]
+  write.csv(to_save, sprintf("%s/black_%s_residuals.csv", results_directory, name), row.names = FALSE)
+
+
   df_chinese <- subset(df, ethnic_background == "chinese")
-  df_chinese_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") + 
+  df_chinese_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") +
                              s(bmi, by=as.factor(had_menopause), k=30, bs="tp") +
-                             s(time_since_last_menstual_period, k=30, bs="ps")  + 
-                             s(alcoholic_drinks_yesterday, k=30, bs="ps") + 
+                             s(time_since_last_menstual_period, k=30, bs="ps")  +
+                             s(alcoholic_drinks_yesterday, k=30, bs="ps") +
                              s(pack_years_of_smoking, k=30, bs="ps")
                            , optimizer=c("outer", "newton"), data=df_chinese)
-  chinese_marker <- df_chinese_gam$residuals
-  chinese_marker <- chinese_marker[chinese_marker < upper_bounds & chinese_marker > lower_bounds]
   
-  
+  to_save <- data.frame( df_chinese$id, df_chinese$eid_19266, df_chinese_gam$residuals)
+  colnames(to_save) <- residual_col_names
+  to_save <- to_save[to_save$residuals < upper_bounds & to_save$residuals > lower_bounds,]
+  write.csv(to_save, sprintf("%s/chinese_%s_residuals.csv", results_directory, name), row.names = FALSE)
+
+
   df_mixed <- subset(df, ethnic_background == "mixed")
-  df_mixed_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") + 
+  df_mixed_gam = mgcv::gam(marker ~ s(age_at_recruitment, by=as.factor(had_menopause), k=30, bs="ps") +
                                s(bmi, by=as.factor(had_menopause), k=30, bs="tp") +
-                               s(time_since_last_menstual_period, k=30, bs="ps")  + 
-                               s(alcoholic_drinks_yesterday, k=30, bs="ps") + 
+                               s(time_since_last_menstual_period, k=30, bs="ps")  +
+                               s(alcoholic_drinks_yesterday, k=30, bs="ps") +
                                s(pack_years_of_smoking, k=30, bs="ps")
                              , optimizer=c("outer", "newton"), data=df_mixed)
-  mixed_marker <- df_mixed_gam$residuals
-  mixed_marker <- mixed_marker[mixed_marker < upper_bounds & mixed_marker > lower_bounds]
   
-  plot(density(white_marker), col="wheat", main=paste("Adjusted Density plot of", name, "By Ethnicity"),
+  to_save <- data.frame( df_mixed$id, df_mixed$eid_19266, df_mixed_gam$residuals)
+  colnames(to_save) <- residual_col_names
+  to_save <- to_save[to_save$residuals < upper_bounds & to_save$residuals > lower_bounds,]
+  write.csv(to_save, sprintf("%s/mixed_%s_residuals.csv", results_directory, name), row.names = FALSE)
+
+  plot(density(df_white_gam$residuals), col="wheat", main=paste("Adjusted Density plot of", name, "By Ethnicity"),
        xlab = name,
        ylab = "Density",
        lwd=2.0,
        #ylim=c(0,3.5)
   )
-  lines(density(asian_marker), col="rosybrown3", lwd=2)
-  lines(density(chinese_marker), col="slateblue", lwd=2)
-  lines(density(black_marker), col="tomato1", lwd=2)
-  lines(density(mixed_marker), col="skyblue1", lwd=2)
-  
+  lines(density(df_asian_gam$residuals), col="rosybrown3", lwd=2)
+  lines(density(df_chinese_gam$residuals), col="slateblue", lwd=2)
+  lines(density(df_black_gam$residuals), col="tomato1", lwd=2)
+  lines(density(df_mixed_gam$residuals), col="skyblue1", lwd=2)
+
   legend(x="topright", legend=c("Black", "Asian", "Chinese", "White", "Mixed"),
                           col=c("tomato1", "rosybrown3", "slateblue", "wheat", "skyblue1"), lwd = 2)
 }
@@ -174,34 +199,34 @@ run_gam <- function(df, name) {
 descriptive_stats <- function(df, name) {
   lower_bounds <- mean(df$marker) - sd(df$marker)*6
   upper_bounds <- mean(df$marker) + sd(df$marker)*6
-  
+
   white_marker <- subset(df, ethnic_background == "white")$marker
   white_marker <- white_marker[white_marker < upper_bounds & white_marker > lower_bounds]
-  
+
   black_marker <- subset(df, ethnic_background == "black")$marker
   black_marker <- black_marker[black_marker < upper_bounds & black_marker > lower_bounds]
-  
+
   asian_marker <- subset(df, ethnic_background == "asian")$marker
   asian_marker <- asian_marker[asian_marker < upper_bounds & asian_marker > lower_bounds]
-  
+
   chinese_marker <- subset(df, ethnic_background == "chinese")$marker
   chinese_marker <- chinese_marker[chinese_marker < upper_bounds & chinese_marker > lower_bounds]
-  
+
   mixed_marker <- subset(df, ethnic_background == "mixed")$marker
   mixed_marker <- mixed_marker[mixed_marker < upper_bounds & mixed_marker > lower_bounds]
-  
-  
+
+
   plot(density(white_marker), col="wheat", main=paste("Descriptive plot of", name, "By Ethnicity"),
        xlab = name,
        ylab = "Density",
        lwd=2.0,
-       ylim=c(0,0.3)
+       #ylim=c(0,0.3)
   )
   lines(density(asian_marker), col="rosybrown3", lwd=2)
   lines(density(black_marker), col="tomato1", lwd=2)
   lines(density(chinese_marker), col="slateblue", lwd=2)
   lines(density(mixed_marker), col="skyblue1", lwd=2)
-  
+
   legend(x="topright", legend=c("Black", "Asian", "Chinese", "White", "Mixed"),
          col=c("tomato1", "rosybrown3", "slateblue", "wheat", "skyblue1"), lwd = 2)
 }
@@ -231,7 +256,7 @@ descriptive_stats(red_blood_cell_count, "Red Blood Cell Count")
 run_gam(red_blood_cell_count, "Red Blood Cell Count")
 
 
-blood_trait_covars$marker <- blood_markers$haemoglobin_concentration 
+blood_trait_covars$marker <- blood_markers$haemoglobin_concentration
 haemoglobin_concentration <- subset(blood_trait_covars, marker < 22) #change this
 haemoglobin_concentration <- haemoglobin_concentration[complete.cases(haemoglobin_concentration),]
 descriptive_stats(haemoglobin_concentration, "Haemoglobin Concentration")
@@ -276,7 +301,9 @@ blood_trait_covars$marker <- blood_markers$platelet_count
 platelet_count <- subset(blood_trait_covars, marker <= 1000) #change this
 platelet_count <- platelet_count[complete.cases(platelet_count),]
 descriptive_stats(platelet_count, "Platelet Count")
-run_gam(platelet_count, "Platelet Count")
+run_gam(platelet_count, "platelet_count")
+
+
 
 blood_trait_covars$marker <- blood_markers$basophil_count
 basophil_count <- subset(blood_trait_covars, marker < 2.5) #change this
@@ -284,7 +311,7 @@ basophil_count <- basophil_count[complete.cases(basophil_count),]
 descriptive_stats(basophil_count, "Basophil Count")
 run_gam(basophil_count, "Basophil Count")
 
-blood_trait_covars$marker <- blood_markers$neutrophil_count 
+blood_trait_covars$marker <- blood_markers$neutrophil_count
 neutrophil_count <- subset(blood_trait_covars, marker < 40)
 neutrophil_count <- neutrophil_count[complete.cases(neutrophil_count),]
 descriptive_stats(neutrophil_count, "Neutrophil Count")
