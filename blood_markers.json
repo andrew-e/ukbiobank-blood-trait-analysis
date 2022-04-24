@@ -1,4 +1,7 @@
 {
+  "eid": {
+    "name": "id"
+  },
   "30070-0.0": {
     "name": "red_blood_cell_distribution_width"
   },

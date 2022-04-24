@@ -12,7 +12,7 @@ while IFS=" " read -r key value; do
     id_map[$key]=$value
 done < "$id_map_file"
 
-echo "Done, performing sed ${#id_map[@]}"
+echo "Done, performing regex search and replace ${#id_map[@]} times..."
 value=$(<$filename)
 
 for id in "${!id_map[@]}"
