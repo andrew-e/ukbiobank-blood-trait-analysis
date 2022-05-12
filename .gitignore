@@ -1,2 +1,5 @@
 results/
 data/
+*.bed
+*.bim
+*.fam
