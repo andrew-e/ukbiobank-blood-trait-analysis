@@ -48,7 +48,7 @@ cor <- p2cor(p = as.numeric(summary_statistics$P),
 summary_statistics$COR <- cor
 summary_statistics <- summary_statistics[!is.na(COR)]
 
-cl <- makeCluster(32)
+cl <- makeCluster(8)
 
 plink_chromosome_prefix = paste0(plink_file_prefix, chromosome)
 linked_file <- sprintf("linked_%s_%s", ethnicity, marker)
@@ -73,8 +73,9 @@ current_lassosum_result <- lassosum.pipeline(
 
 print("now calculating the validation")
 
-phenotypes <- fread(sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/residuals/%s_%s_residuals.csv", ethnicity, marker)) #is this the residuals?
-target_pheno <- data.frame(FID = phenotypes$eid_19266, IID = phenotypes$eid_19266, residuals = phenotypes$residuals)
+phenotypes <- fread(sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/residuals/%s_%s_residuals.csv", ethnicity, marker))
+merged_phenotypes <- merge(patient_id_map, phenotypes, by.x="eid_19266", by.y="eid_19266", all.x=TRUE)
+target_pheno <- data.frame(FID = merged_phenotypes$eid_19266, IID = merged_phenotypes$eid_19266, residuals = merged_phenotypes$residuals)
 target.res <- lassosum::validate(current_lassosum_result, pheno = as.data.frame(target_pheno))
 r2 <- max(target.res$validation.table$value)^2
 write(r2, file = sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/lassosum/r2_%s_%s_%s.txt", ethnicity, marker, chromosome))
