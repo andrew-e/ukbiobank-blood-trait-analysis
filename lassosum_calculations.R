@@ -35,27 +35,29 @@ principal_components <- cbind(phenotype = 1, principal_components) #is this righ
 principal_components$IID <- principal_components$eid_19266
 principal_components$FID <- principal_components$eid_19266
 
-
 summary_statistics <- fread(sprintf("/rds/general/user/are20/home/plink/summary_statistics/%s.assoc", marker))
 summary_statistics <- summary_statistics[!P == 0]
 
 pc_ethnicity <- principal_components[ethnic_background == ethnicity]
 cor <- p2cor(p = as.numeric(summary_statistics$P),
-             n = nrow(pc_ethnicity),
+             n = nrow(principal_components),
              sign = summary_statistics$EFFECT
 )
 
 summary_statistics$COR <- cor
 summary_statistics <- summary_statistics[!is.na(COR)]
 
-cl <- makeCluster(8)
+cl <- makeCluster(16)
 
 plink_chromosome_prefix = paste0(plink_file_prefix, chromosome)
 linked_file <- sprintf("linked_%s_%s", ethnicity, marker)
+
 file.remove(paste0(linked_file, ".bim"))
 file.symlink(paste0(plink_chromosome_prefix, "_v3.bim"), paste0(linked_file, ".bim"))
 file.remove(paste0(linked_file, ".bed"))
 file.symlink(paste0(plink_chromosome_prefix, "_v3.bed"), paste0(linked_file, ".bed"))
+file.remove(paste0(linked_file, ".fam"))
+file.symlink("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/data/good_fam.fam", paste0(linked_file, ".fam"))
 
 set.seed(1)
 current_lassosum_result <- lassosum.pipeline(
@@ -76,7 +78,9 @@ print("now calculating the validation")
 phenotypes <- fread(sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/residuals/%s_%s_residuals.csv", ethnicity, marker))
 merged_phenotypes <- merge(patient_id_map, phenotypes, by.x="eid_19266", by.y="eid_19266", all.x=TRUE)
 target_pheno <- data.frame(FID = merged_phenotypes$eid_19266, IID = merged_phenotypes$eid_19266, residuals = merged_phenotypes$residuals)
-target.res <- lassosum::validate(current_lassosum_result, pheno = as.data.frame(target_pheno))
+
+filtered_pcs <- subset(principal_components, select = -c(ethnic_background, eid_19266) )
+target.res <- lassosum::validate(current_lassosum_result, pheno = as.data.frame(target_pheno), covar=as.data.frame(filtered_pcs))
 r2 <- max(target.res$validation.table$value)^2
 write(r2, file = sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/lassosum/r2_%s_%s_%s.txt", ethnicity, marker, chromosome))
 
