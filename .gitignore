@@ -3,3 +3,5 @@ data/
 *.bed
 *.bim
 *.fam
+*.sh.e*
+*.sh.o*
