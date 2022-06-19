@@ -1,7 +1,5 @@
 #PBS -lselect=1:ncpus=16:mem=10gb
-#PBS -lwalltime=24:0:0
-#PBS -J 1-22  
-
+#PBS -lwalltime=8:0:0
 
 ## The environment variable $CHROMOSOME gives each
 ## subjob's index within the array
@@ -26,7 +24,7 @@ do
       --memory 96000 \
       --bed /rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bed \
       --bim /rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim \
-      --fam /rds/general/project/chadeau_ukbb_folder/live/data/project_data/Genetic_data_extraction/plink_files/ukb_imp.fam \
+      --fam /rds/general/user/are20/home/ukbiobank-blood-trait-analysis/data/working_fam_v6.fam \
       --exclude /rds/general/user/are20/home/plink/duplicates/UKB_dupl_vars_to_exclude_chr${CHROMOSOME}.txt \
       --set-missing-var-ids @:#_\$1_\$2 \
       --score /rds/general/user/are20/home/plink/scores/reduced_${PHENOTYPE}_my.score_condind_common sum double-dosage \

@@ -4,4 +4,4 @@
 echo "Running job for $MARKER and $ETHNICITY"
 
 module load anaconda3/personal
-Rscript /rds/general/user/are20/home/ukbiobank-blood-trait-analysis/lassosum_merge_chromosomes.R $MARKER $ETHNICITY
+Rscript /rds/general/user/are20/home/ukbiobank-blood-trait-analysis/lassosum/lassosum_merge_chromosomes.R $MARKER $ETHNICITY

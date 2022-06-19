@@ -1,7 +1,7 @@
 results/
 data/
+bfile_symlinks/
 *.bed
 *.bim
 *.fam
-*.sh.e*
-*.sh.o*
+*.sh.[eo]*
