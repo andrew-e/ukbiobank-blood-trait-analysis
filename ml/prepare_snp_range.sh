@@ -1,58 +1,56 @@
-#PBS -l select=1:ncpus=1:mem=56gb
+#PBS -l select=1:ncpus=1:mem=128gb
 #PBS -l walltime=6:0:0
+#PBS -J 0-14
 
 module load plink
 
 BASE_DIR=/rds/general/user/are20/home/ukbiobank-blood-trait-analysis
-DATA_DIR=$BASE_DIR/data/ml/snps
+PHENOTYPES=(baso eo hct hgb lymph mchc mch mcv mono mpv neut pct rbc rdw_cv wbc)
+PHENOTYPE="${PHENOTYPES[PBS_ARRAY_INDEX]}"
+#PHENOTYPE=pct
 
-#for PHENOTYPE in baso eo hct hgb lymph mchc mch mcv mono mpv neut pct rbc rdw_cv wbc
-#for PHENOTYPE in mcv mono mpv neut rbc rdw_cv wbc
-for PHENOTYPE in pct 
+echo "Starting $PHENOTYPE..."
+EPH_DIR=/rds/general/user/are20/ephemeral/ml/${PHENOTYPE}
+
+SCORE_FILE=/rds/general/user/are20/home/plink/scores/reduced_${PHENOTYPE}_my.score_condind_common
+SCORE_SNP_LIST=$(wc -l < $SCORE_FILE)
+echo "Calculating $SCORE_SNP_LIST SNPs"
+
+for score_line in $(seq 1 $SCORE_SNP_LIST)
 do
-  echo "Starting $PHENOTYPE..."
+  SNP=$(sed "${score_line}q;d" $SCORE_FILE | awk '{print $1}')
+  echo "Finding surrounding SNPs for $SNP..."
 
-  SCORE_FILE=/rds/general/user/are20/home/plink/scores/reduced_${PHENOTYPE}_my.score_condind_common
+  if compgen -G "${EPH_DIR}/*${SNP}*/plink.raw" > /dev/null; then
+    echo "$SNP is already calculated, skipping."
+    continue
+  fi
 
-  SCORE_SNP_LIST=$(wc -l < $SCORE_FILE)
-  for score_line in $(seq 1 $SCORE_SNP_LIST)
-  do
-    SNP=$(sed "${score_line}q;d" $SCORE_FILE | awk '{print $1}')
-    echo "Calculating $SNP..."
-    if compgen -G "${DATA_DIR}/${PHENOTYPE}/*${SNP}*.txt" > /dev/null; then
-      echo "$SNP is already calculated, skipping."
-      continue
-    fi
-
-    for CHROMOSOME in $(seq 1 22)
-    do
-      SNPS_FILE=$DATA_DIR/${PHENOTYPE}/surrounding_snp_for_chr_${CHROMOSOME}_snp_${SNP}.txt
-      BIM_FILE=/rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim
-
-      SNPS=$(LC_ALL=C fgrep -A 500 -B 500 $SNP $BIM_FILE)
-      if [[ ! -z $SNPS ]]; then
-        echo "$SNPS" > $SNPS_FILE
-        echo "Completed file for SNP $SNP"
-        break
-      fi
-    done
-  done
-  
-  echo "Now, shoving them all together in one file..."
   for CHROMOSOME in $(seq 1 22)
   do
-    SNPS_PER_CHR=$DATA_DIR/${PHENOTYPE}/all_surrounding_snps_for_chr_${CHROMOSOME}.txt
-    cat $DATA_DIR/${PHENOTYPE}/surrounding_snp_for_chr_${CHROMOSOME}_snp_* | awk '!x[$0]++' > $SNPS_PER_CHR 
-    rm $DATA_DIR/${PHENOTYPE}/surrounding_snp_for_chr_${CHROMOSOME}_snp_*    
+    BIM_FILE=/rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim
+    PADDED_SNP=" ${SNP} "
+    SNPS=$(LC_ALL=C fgrep -A 500 -B 500 $PADDED_SNP $BIM_FILE)
 
-    #plink \
-    #  --recode 12 AD \
-    #  --bed /rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bed \
-    #  --bim /rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim \
-    #  --fam $BASE_DIR/data/working_fam_v6.fam \
-    #  --extract $SNPS_PER_CHR \
-    #  --out $DATA_DIR/${PHENOTYPE}/extracted_snps_for_chr_${CHROMOSOME}
+    if [[ ! -z $SNPS ]]; then
+      SNP_DIR=$EPH_DIR/SNP_${SNP}
+      SURROUNDING_SNPS=$SNP_DIR/surrounding_snps.txt
+
+      mkdir $SNP_DIR
+      echo "$SNPS" > $SURROUNDING_SNPS
+
+      echo "Preparing raw file for $SNP"
+      plink \
+        --recode 12 A \
+        --bed /rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bed \
+        --bim /rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim \
+        --fam $BASE_DIR/data/working_fam_v6.fam \
+        --extract $SURROUNDING_SNPS \
+        --out ${SNP_DIR}/plink
+      break
+    fi
   done
-
+  echo "Completed prep for $SNP"
 done
+
 
