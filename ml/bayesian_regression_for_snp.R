@@ -36,6 +36,7 @@ calculateR2 <- function(stan_glm) {
 }
 
 calculateBayesianGLM <- function(surrounding_snp, includePCs) {
+  gc()
   snp_no_trail <- gsub('.{2}$', '', surrounding_snp)
   ss_snp <- summary_statistic[summary_statistic$ID == snp_no_trail]
   
@@ -58,10 +59,11 @@ calculateBayesianGLM <- function(surrounding_snp, includePCs) {
   
   stan_model <- NULL
   if (nrow(ss_snp) == 1) {
-    stan_model <- stan_glm(as.formula(glm_formula), data = plink_subset, prior = normal(location = location, scale = scale, autoscale = FALSE), refresh = 0)
+    stan_model <- stan_glm(as.formula(glm_formula), data = plink_subset, prior = normal(location = location, scale = scale, autoscale = FALSE), refresh=0)
   }
   else {
-    stan_model <- stan_glm(as.formula(glm_formula), data = plink_subset, refresh = 0)
+    return()
+    #stan_model <- stan_glm(as.formula(glm_formula), data = plink_subset, refresh=0)
   }
   return(stan_model)
 }
@@ -74,6 +76,10 @@ plink_data <- as.data.frame(plink_data)
 
 snp_list <- colnames(plink_data)[-6:-1]
 plink_data_ethnicity <- merge(residuals, plink_data, by.x="eid_19266", by.y="FID")
+
+if (ethnicity == "white") {
+  plink_data_ethnicity <- plink_data_ethnicity[1:50000,]
+}
 
 #Get summary statistics, to be used for priors in the bayesian linear regression.
 summary_stat_columns <- c("ID", "CHR", "EFFECT", "SE")

@@ -7,7 +7,6 @@ module load plink
 BASE_DIR=/rds/general/user/are20/home/ukbiobank-blood-trait-analysis
 PHENOTYPES=(baso eo hct hgb lymph mchc mch mcv mono mpv neut pct rbc rdw_cv wbc)
 PHENOTYPE="${PHENOTYPES[PBS_ARRAY_INDEX]}"
-#PHENOTYPE=pct
 
 echo "Starting $PHENOTYPE..."
 EPH_DIR=/rds/general/user/are20/ephemeral/ml/${PHENOTYPE}
@@ -29,8 +28,8 @@ do
   for CHROMOSOME in $(seq 1 22)
   do
     BIM_FILE=/rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim
-    PADDED_SNP=" ${SNP} "
-    SNPS=$(LC_ALL=C fgrep -A 500 -B 500 $PADDED_SNP $BIM_FILE)
+    
+    SNPS=$(LC_ALL=C fgrep -A 500 -B 500 "${SNP}$(printf '\t')" $BIM_FILE)
 
     if [[ ! -z $SNPS ]]; then
       SNP_DIR=$EPH_DIR/SNP_${SNP}
@@ -52,5 +51,3 @@ do
   done
   echo "Completed prep for $SNP"
 done
-
-
