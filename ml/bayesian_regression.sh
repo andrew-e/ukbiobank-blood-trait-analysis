@@ -1,11 +1,11 @@
-#PBS -l select=1:ncpus=4:mem=400gb
-#PBS -l walltime=8:0:0
-#PBS -J 0-200
+#PBS -l select=1:ncpus=12:mem=124gb
+#PBS -l walltime=16:0:0
+#PBS -J 0-567
 
 module load anaconda3/personal
 source activate r4
 
-cd /rds/general/user/are20/ephemeral/ml/$MARKER/
+cd /rds/general/user/are20/ephemeral/ml2000/$MARKER/
 SNPS=($(ls))
 SNP=${SNPS[$PBS_ARRAY_INDEX]}
 SNP=${SNP:4}
