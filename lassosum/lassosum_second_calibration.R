@@ -30,6 +30,14 @@ target_pheno <- data.frame(FID = merged_phenotypes$eid_19266, IID = merged_pheno
 
 current_pipeline <- readRDS(sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/lassosum/validation/subset_covar_pheno_%s_%s.rds", ethnicity, marker))
 
+#for (chromosome in 1:22) {
+#  plink_chromosome_prefix = paste0("/rds/general/apps/RDS_COMPATIBILITY_LINKFARM/groupvol/med-bio/uk-biobank-2017/release_12032018/converted_data/imp_bgen1.1_plink/ukb_imp_chr", chromosome)
+#  linked_file <- sprintf("bfile_symlinks/linked_%s_%s_%s", ethnicity, marker, chromosome)
+#  file.symlink(paste0(plink_chromosome_prefix, "_v3.bim"), paste0(linked_file, ".bim"))
+#  file.symlink(paste0(plink_chromosome_prefix, "_v3.bed"), paste0(linked_file, ".bed"))
+#  file.symlink("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/data/working_fam_v6.fam", paste0(linked_file, ".fam"))
+#}
+
 cl <- makeCluster(32)
 second_validation <- validate(current_pipeline,
                                  pheno = as.data.frame(target_pheno),
@@ -40,6 +48,11 @@ second_validation <- validate(current_pipeline,
 
 saveRDS(second_validation, sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/lassosum/validation/second_pass_covar_pheno_%s_%s.rds", ethnicity, marker))
 
+#for (chromosome in 1:22) {
+#  file.remove(paste0(linked_file, ".bim"))
+#  file.remove(paste0(linked_file, ".bed"))
+#  file.remove(paste0(linked_file, ".fam"))
+#}
 
 
 #TODO: here, you can take a look at a few things.  There is the result$validation.table
@@ -51,6 +64,17 @@ saveRDS(second_validation, sprintf("/rds/general/user/are20/home/ukbiobank-blood
 
 
 second_validation <- readRDS(sprintf("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/lassosum/validation/second_pass_covar_pheno_%s_%s.rds", ethnicity, marker))
+
+blood_markers <- c("eo", "hct", "hgb", "lymph")
+ethnicities <- c("black", "asian")
+for (marker in blood_markers) {
+  for (ethnicity in ethnicities) {
+    lassosum_result <- readRDS(sprintf("results/lassosum/validation/first_pass_covar_pheno_%s_%s.rds", ethnicity, marker))
+    results <- lassosum_result$results.table[complete.cases(lassosum_result$results.table),]
+    correlation <- cor(results$pheno, results$best.pgs, use = "pairwise.complete.obs")
+    print(paste(marker, ethnicity, correlation))
+  }
+}
 
 
 #now, run an lm on the output of the second validation and the pc with residuals attached.

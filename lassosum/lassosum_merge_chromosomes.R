@@ -14,8 +14,12 @@ for (chromosome in 1:22) {
   lassosum_pipelines <- append(lassosum_pipelines, list(current_pipeline))
 }
 
+
 merged_pipeline <- do.call(lassosum:::merge.lassosum.pipeline, lassosum_pipelines)
 
 saveRDS(merged_pipeline, sprintf("results/lassosum/pipeline/merged_%s_%s.rds", ethnicity, marker))
 print("finished lassosum:::merge")
 
+for (chromosome in 1:22) {
+  file.remove(sprintf("results/lassosum/pipeline/pipeline_chr_%s_%s_%s.rds", ethnicity, marker, chromosome))
+}

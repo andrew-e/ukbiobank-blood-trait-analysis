@@ -6,6 +6,8 @@ library(dplyr)
 library(bnstruct)
 library(ggplot2)
 
+setwd("/rds/general/user/are20/home/")
+
 biobank_csv = "/rds/general/project/chadeau_ukbb_folder/live/data/project_data/UKB_69328/basket_47946_14Sep21/ukb47946.csv"
 biobank_id_map = "/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/data/link_69328_19266_genotyped.txt"
 covars_metadata <- fromJSON("ukbiobank-blood-trait-analysis/blood_type_covars.json", flatten=TRUE)
