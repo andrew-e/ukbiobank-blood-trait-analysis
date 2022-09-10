@@ -1,41 +1,43 @@
 library(data.table)
+library(dbplyr)
+library(tidyverse)
 
 setwd("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis")
-args = commandArgs(trailingOnly=TRUE)
-marker <- args[1]
-ethnicity <- args[2]
 
-SCORE_FILENAME <- sprintf("results/ml/scores/%s_%s.score", marker, ethnicity)
-scores <- fread(SCORE_FILENAME)
-scores$V4 <- NULL
-scores <- unique(scores)
-scores$V3 <- abs(scores$V3) #Just copying how the original score files were
-scores <- scores[complete.cases(scores),]
+EPHEMERAL_BASE <- "/rds/general/user/are20/ephemeral"
 
-write.table(scores, sprintf("results/ml/scores/%s_%s.score_cleaned", marker, ethnicity), quote = FALSE, row.names = FALSE, col.names = FALSE)
+all_bims <- fread(sprintf("%s/bfile_symlinks/linked_%s_%s_%s.bim", EPHEMERAL_BASE, ethnicity, marker, 1))
+for (chromosome in 2:22) {
+  linked_file <- sprintf("%s/bfile_symlinks/linked_%s_%s_%s.bim", EPHEMERAL_BASE, ethnicity, marker, chromosome)
+  bim <- fread(linked_file)
+  all_bims <- rbind(all_bims, bim)
+}
 
-########## RANDOM SHIT  #########
+ethnicities <- c("asian", "black", "chinese", "mixed")
+blood_markers <- c("baso", "eo",  "hct", "hgb", "lymph", "mch", "mchc", "mcv", "mono", "mpv", "neut", "pct", "rbc", "rdw_cv", "wbc")
 
-
-#all_bims <- fread(sprintf("/rds/general/apps/RDS_COMPATIBILITY_LINKFARM/groupvol/med-bio/uk-biobank-2017/release_12032018/converted_data/imp_bgen1.1_plink/ukb_imp_chr1_v3.bim"))
-#for (chr in 2:22) {
-#  bim <- fread(sprintf("/rds/general/apps/RDS_COMPATIBILITY_LINKFARM/groupvol/med-bio/uk-biobank-2017/release_12032018/converted_data/imp_bgen1.1_plink/ukb_imp_chr%s_v3.bim", chr))
-#  all_bims <- rbind(all_bims, bim)
-#}
-
-
-
-#chr12_bim <- fread("/rds/general/apps/RDS_COMPATIBILITY_LINKFARM/groupvol/med-bio/uk-biobank-2017/release_12032018/converted_data/imp_bgen1.1_plink/ukb_imp_chr12_v3.bim")
-
-
-#head(chr12_bim)
-
-#score_bim <- merge(scores, chr12_bim, by.x="V1", by.y="V2")
-
-#scores_with_na <- fread("/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/results/ml/scores/pct_black_with_NAs.score")
-#scores_with_na_and_bim<- merge(scores_with_na, all_bims, by.x="V2", by.y="V2")
-
-#original_score_file <- fread(sprintf("/rds/general/user/are20/home/plink/scores/reduced_%s_my.score_condind_common", marker))
-
-
+for (marker in blood_markers) {
+  for (ethnicity in ethnicities) {
+    print(paste(marker, ethnicity))
+    if (file.exists(sprintf("results/ml2000/scores/lm_train_%s_%s.score_cleaned", marker, ethnicity))) {
+      print("already calculated, move on.")
+      next
+    }
+    
+    SCORE_FILENAME <- sprintf("results/ml2000/scores/lm_train_%s_%s.score", marker, ethnicity)
+    scores <- fread(SCORE_FILENAME)
+    scores$abs_mean_intercept <- abs(scores$mean_intercept)
+    
+    print(paste("Number of duplicated SNPs", sum(duplicated(scores$best_performing_snp))))
+    
+    scores <- unique(setDT(scores)[order(best_performing_snp, -abs_mean_intercept)], by = "best_performing_snp")
+    scores_joined_with_bim <- merge(scores, all_bims, by.x="best_performing_snp", by.y="V2", sort = F)
+    # Adding column based on other column:
+    scores_joined_with_bim <- scores_joined_with_bim %>% mutate(allele = if_else(mean_intercept >= 0, V6, V5))
+    
+    cleaned_scores <- data.frame(scores_joined_with_bim$best_performing_snp, scores_joined_with_bim$allele, scores_joined_with_bim$abs_mean_intercept)
+    
+    write.table(cleaned_scores, sprintf("results/ml2000/scores/lm_train_%s_%s.score_cleaned", marker, ethnicity), quote = FALSE, row.names = FALSE, col.names = FALSE)
+  }
+}
 

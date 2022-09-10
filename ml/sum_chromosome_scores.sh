@@ -3,18 +3,19 @@ MARKER=$1
 ETHNICITY=$2
 
 BASE_DIR=/rds/general/user/are20/home/ukbiobank-blood-trait-analysis
-RESULTS_DIR=$BASE_DIR/results/ml/plink/$MARKER/$ETHNICITY
+RESULTS_DIR=$BASE_DIR/results/ml2000/plink/lm_train_${MARKER}/$ETHNICITY
 
 MERGED_CHROMOSOMES=$RESULTS_DIR/all_chromosome_scores.txt
 RESULT_FILE=$RESULTS_DIR/sum_chromosome_scores.txt
 
 CHROMOSOME_FILES=$(ls $RESULTS_DIR/*.profile | wc -l)
 if [[ $CHROMOSOME_FILES != 22 ]]; then
-  echo "ERROR: $MARKER $ETHNICITY Some chromosome files missing, $CHROMOSOME_FILES"
+  echo "ERROR: $MARKER $ETHNICITY Some chromosome files missing, only $CHROMOSOME_FILES/22 present.  Exiting."
   exit 1
 fi
+
 if [ -f "$RESULT_FILE" ]; then
-  echo "$MARKER Already calculated, skipping"
+  echo "$MARKER $ETHNICITY Already calculated, skipping"
   exit 1
 fi
 

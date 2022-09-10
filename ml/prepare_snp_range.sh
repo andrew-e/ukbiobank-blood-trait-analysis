@@ -9,7 +9,7 @@ PHENOTYPES=(baso eo hct hgb lymph mchc mch mcv mono mpv neut pct rbc rdw_cv wbc)
 PHENOTYPE="${PHENOTYPES[PBS_ARRAY_INDEX]}"
 
 echo "Starting $PHENOTYPE..."
-EPH_DIR=/rds/general/user/are20/ephemeral/ml/${PHENOTYPE}
+EPH_DIR=/rds/general/user/are20/ephemeral/ml2000/${PHENOTYPE}
 
 SCORE_FILE=/rds/general/user/are20/home/plink/scores/reduced_${PHENOTYPE}_my.score_condind_common
 SCORE_SNP_LIST=$(wc -l < $SCORE_FILE)
@@ -28,14 +28,14 @@ do
   for CHROMOSOME in $(seq 1 22)
   do
     BIM_FILE=/rds/general/project/uk-biobank-2018/live/reference/sdata_12032018/ukb_imp_chr${CHROMOSOME}.bim
-    
-    SNPS=$(LC_ALL=C fgrep -A 500 -B 500 "${SNP}$(printf '\t')" $BIM_FILE)
+  
+    SNPS=$(LC_ALL=C fgrep -A 1000 -B 1000 "${SNP}$(printf '\t')" $BIM_FILE)
 
     if [[ ! -z $SNPS ]]; then
       SNP_DIR=$EPH_DIR/SNP_${SNP}
       SURROUNDING_SNPS=$SNP_DIR/surrounding_snps.txt
 
-      mkdir $SNP_DIR
+      mkdir -p $SNP_DIR
       echo "$SNPS" > $SURROUNDING_SNPS
 
       echo "Preparing raw file for $SNP"

@@ -1,5 +1,7 @@
 library(data.table)
 library(rstanarm)
+library(loo)
+library(ggplot2)
 options(mc.cores = parallel::detectCores())
 #You can read up on bayesian linear regression and stan_glm here:https://cran.r-project.org/web/packages/rstanarm/rstanarm.pdf#page.108
 
@@ -10,7 +12,7 @@ ethnicity <- args[2]
 snp <- args[3]
 
 EPHEMERAL_DIR <- paste0("/rds/general/user/are20/ephemeral/ml2000/", marker, "/SNP_", snp)
-SCORE_FILENAME <- sprintf("results/ml2000/scores/%s_%s.score", marker, ethnicity)
+SCORE_FILENAME <- sprintf("results/ml2000/scores/%s_%s.recalc_score", marker, ethnicity)
 
 
 if (!file.exists(SCORE_FILENAME)) {
@@ -25,7 +27,6 @@ if (any(score_file$original_snp == snp)) {
   print(paste(snp, "already calculated and stored in score file, skipping."))
   q()
 }
-
 
 #Get summary statistics, to be used for priors in the bayesian linear regression.
 summary_stat_columns <- c("ID", "CHR", "REF", "ALT", "EFFECT", "SE")
@@ -43,7 +44,7 @@ residuals <- fread(sprintf("results/residuals/%s_%s_residuals_scaled.csv", ethni
 
 calculateResults <- function(stan_glm) {
   if (is.null(stan_glm)) {
-    return(c(NA, NA))
+    return(c(NA, NA, NA))
   }
   
   mean_intercept <- summary(stan_glm)[, "mean"][2]
@@ -51,14 +52,15 @@ calculateResults <- function(stan_glm) {
   
   posterior_interval <- posterior_interval(stan_glm)[2,]
   posterior_interval_range <- posterior_interval[2] - posterior_interval[1]
+  names(posterior_interval_range) <- NULL
   
   ss_res <- var(residuals(stan_glm))
   ss_total <- var(fitted(stan_glm)) + var(residuals(stan_glm))
   r2 <- 1 - (ss_res / ss_total)
-  return(c(mean_intercept, r2))
+  return(c(mean_intercept, r2, posterior_interval_range))
 }
 
-calculateBayesianGLM <- function(surrounding_snp) {
+calculateBayesianGLM <- function(surrounding_snp, includePCs) {
   snp_no_trail <- gsub('.{2}$', '', surrounding_snp)
   
   plink_subset <- subset(plink_data_ethnicity, select = c("id", "eid_19266", "scaled_residuals", surrounding_snp))
@@ -98,13 +100,14 @@ calculateBayesianGLM <- function(surrounding_snp) {
 snp_list <- colnames(plink_data)[-6:-1]
 plink_data_ethnicity <- merge(residuals, plink_data, by.x="eid_19266", by.y="FID")
 
-stan_glm_pcs <- lapply(snp_list, calculateBayesianGLM)
-saveRDS(stan_glm_pcs, paste0(EPHEMERAL_DIR, "/", ethnicity, "_stan_results.rds"))
 
+stan_glm_pcs <- readRDS(paste0(EPHEMERAL_DIR, "/", ethnicity, "_stan_results.rds"))
 stan_results <- lapply(stan_glm_pcs, calculateResults)
-stan_results <- data.frame( mean_intercept= sapply( stan_results, "[", 1), 
-                            r2 =sapply( stan_results, "[", 2) )
 
+stan_results <- data.frame( mean_intercept= sapply( stan_results, "[", 1), 
+                            r2 =sapply( stan_results, "[", 2),
+                            posterior_interval_range =sapply( stan_results, "[", 3)
+                          )
 snp_list_no_trail <- lapply(snp_list, function(snp) {
   gsub('.{2}$', '', snp)
 })
