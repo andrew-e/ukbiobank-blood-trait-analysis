@@ -6,4 +6,4 @@ This is the GitHub repository associated with the Masters thesis of Andrew Elmor
 
 2. The `lassosum` directory used lassosum analysis, which used the lassosum repository outlined here: https://github.com/tshmak/lassosum
 
-3. The `ml` direcotyr used Bespoke SNP recalculation, chosen by 2 separate processes, the first being a Bayesian regression uses original effect sizesas priors, the other being a basic linear regression with no priors.
+3. The `ml` directory used bespoke SNP recalculation for each score file entry.  They were calculated with 2 different processes, the first being a Bayesian regression uses original effect sizesas priors, the other being a basic linear regression with no priors.

@@ -1,5 +1,5 @@
-#PBS -l select=1:ncpus=32:mem=2048gb
-#PBS -l walltime=48:0:0
+#PBS -l select=1:ncpus=32:mem=1024gb
+#PBS -l walltime=64:0:0
 
 echo "Running job for $MARKER and $ETHNICITY"
 

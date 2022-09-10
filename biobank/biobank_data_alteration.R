@@ -10,8 +10,8 @@ setwd("/rds/general/user/are20/home/")
 
 biobank_csv = "/rds/general/project/chadeau_ukbb_folder/live/data/project_data/UKB_69328/basket_47946_14Sep21/ukb47946.csv"
 biobank_id_map = "/rds/general/user/are20/home/ukbiobank-blood-trait-analysis/data/link_69328_19266_genotyped.txt"
-covars_metadata <- fromJSON("ukbiobank-blood-trait-analysis/blood_type_covars.json", flatten=TRUE)
-blood_markers_metadata <- fromJSON("ukbiobank-blood-trait-analysis/blood_markers.json", flatten=TRUE)
+covars_metadata <- fromJSON("ukbiobank-blood-trait-analysis/biobank/blood_type_covars.json", flatten=TRUE)
+blood_markers_metadata <- fromJSON("ukbiobank-blood-trait-analysis/biobank/blood_markers.json", flatten=TRUE)
 results_directory <- "ukbiobank-blood-trait-analysis/results/residuals"
 
 ######
@@ -23,7 +23,7 @@ for (id in names(covars_metadata)) {
   blood_trait_covar_ids <- append(blood_trait_covar_ids, id)
 }
 
-blood_trait_covars <- fread(biobank_csv, sep=',', header=TRUE,stringsAsFactors=FALSE, select = blood_trait_covar_ids) #nrows = 100
+blood_trait_covars <- fread(biobank_csv, sep=',', header=TRUE,stringsAsFactors=FALSE, select = blood_trait_covar_ids)
 
 covar_header_names = c()
 for(column in colnames(blood_trait_covars)) {
@@ -54,21 +54,10 @@ blood_trait_covars$time_since_last_menstual_period[is.na(blood_trait_covars$time
 blood_trait_covars$alcoholic_drinks_yesterday[is.na(blood_trait_covars$alcoholic_drinks_yesterday)] <- 0
 blood_trait_covars$had_menopause[is.na(blood_trait_covars$had_menopause)] <- "no"
 
-#TODO: do we need to do this?  NOT WORKING YETTTTT
-#imputed <- impute.knn(as.matrix(blood_trait_covars), k = 3)
-#imputed = knn.impute(as.matrix(blood_trait_covars), k=3, cat.var=c(2,3,5,9,11), to.impute = 1:nrow(blood_trait_covars), using = 2:nrow(blood_trait_covars))
 
+imputed <- impute.knn(as.matrix(blood_trait_covars), k = 3)
+imputed = knn.impute(as.matrix(blood_trait_covars), k=3, cat.var=c(2,3,5,9,11), to.impute = 1:nrow(blood_trait_covars), using = 2:nrow(blood_trait_covars))
 
-#TODO: dont need to one hot encode
-#use the mltools.one_hot encoding function
-#one_hot_blood_trait_covars <- one_hot(blood_trait_covars)
-#head(one_hot_blood_trait_covars)
-
-#return(one_hot_blood_trait_covars)
-
-#ex. hemoglobin: so it changes what shows up in the blood sample.  So, they are known to influence blood measurements, so we have to take account for those differences.
-#look at the Figure 5A, and grab the data to put into this table
-#then you can
 
 #####
 # STEP 2: prepare blood marker data,
